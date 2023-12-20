@@ -5,6 +5,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import loc.example.newsapp111923.BuildConfig
 import loc.example.newsapp111923.repo.NewsRepository
 import loc.example.newsapp111923.repo.NewsRepositoryImpl
 import loc.example.newsapp111923.service.NewsService
@@ -19,18 +20,35 @@ import javax.inject.Singleton
 @Module
 abstract class AppModule {
     companion object {
+        private const val API_KEY = BuildConfig.NEWS_API_KEY
+
         //        https://newsapi.org/v2/everything?q=tesla&from=2023-10-19&sortBy=publishedAt&apiKey=987aa97c056746e6856b61f06abfc951
         private const val BASE_URL = "https://newsapi.org/v2/"
 
         @Provides
-        fun provideLoggingInterceptor(): Interceptor =
+        fun provideLoggingInterceptor(): HttpLoggingInterceptor =
             HttpLoggingInterceptor()
                 .setLevel(HttpLoggingInterceptor.Level.BODY)
 
         @Provides
-        fun provideOkHttpClient(interceptor: Interceptor) =
+        fun provideApiKeyInterceptor() =
+            Interceptor {
+                val request = it.request().newBuilder()
+                val url = it.request().url
+                val apiKeyUrl = url.newBuilder().addEncodedQueryParameter("apiKey", API_KEY)
+                    .build()
+                val apiKeyRequest = request.url(apiKeyUrl).build()
+                it.proceed(apiKeyRequest)
+            }
+
+        @Provides
+        fun provideOkHttpClient(
+            httpLoggingInterceptor: HttpLoggingInterceptor,
+            apiKeyInterceptor: Interceptor
+        ) =
             OkHttpClient.Builder()
-                .addInterceptor(interceptor)
+                .addInterceptor(httpLoggingInterceptor)
+                .addInterceptor(apiKeyInterceptor)
                 .build()
 
         @Provides

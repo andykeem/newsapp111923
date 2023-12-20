@@ -1,0 +1,9 @@
+package loc.example.newsapp111923.api.response
+
+import loc.example.newsapp111923.model.Article
+
+data class EverythingResponse(
+    val status: String,
+    val totalResults: Int,
+    val articles: List<Article>
+)
